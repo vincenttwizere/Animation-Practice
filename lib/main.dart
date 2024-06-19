@@ -1,73 +1,91 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Flutter Animated List Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: AnimatedListExample(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
+class AnimatedListExample extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _AnimatedListExampleState createState() => _AnimatedListExampleState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _AnimatedListExampleState extends State<AnimatedListExample> {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+  final List<String> _items = ["Item 1", "Item 2", "Item 3"];
 
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
+  void _addItem() {
+    final int index = _items.length;
+    _items.add("Item ${index + 1}");
+    _listKey.currentState?.insertItem(index);
+  }
+
+  void _removeItem(int index) {
+    final String removedItem = _items.removeAt(index);
+    _listKey.currentState?.removeItem(
+      index,
+      (context, animation) => _buildItem(removedItem, animation),
+    );
+  }
+
+  Widget _buildItem(String item, Animation<double> animation) {
+    return SizeTransition(
+      sizeFactor: animation,
+      child: Card(
+        margin: EdgeInsets.symmetric(vertical: 8.0),
+        child: ListTile(
+          title: Text(item),
+          trailing: IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () {
+              int currentIndex = _items.indexOf(item);
+              if (currentIndex != -1) {
+                _removeItem(currentIndex);
+              }
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text('Animated List'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child: Text(
-                '$_counter',
-                key: ValueKey<int>(_counter),
-                style: Theme.of(context).textTheme.headlineMedium,
+          children: [
+            Expanded(
+              child: AnimatedList(
+                key: _listKey,
+                initialItemCount: _items.length,
+                itemBuilder: (context, index, animation) {
+                  return _buildItem(_items[index], animation);
+                },
               ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: _addItem,
+        child: Icon(Icons.add),
       ),
     );
   }
